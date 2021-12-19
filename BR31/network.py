@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from utils import preprocess
 
 
 class DNN(nn.Module):
@@ -18,6 +19,7 @@ class DNN(nn.Module):
         return prob, value
 
     def predict(self, x):
+        x = preprocess(x)
         with torch.no_grad():
             prob, value = self.forward(x)
         prob = prob.squeeze().cpu().numpy()

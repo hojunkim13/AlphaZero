@@ -1,6 +1,5 @@
 from copy import deepcopy
 import numpy as np
-from utils import preprocess
 
 
 class Node:
@@ -58,11 +57,10 @@ class MCTS:
         node = self.root_node
         leaf_node = self.select(node)
         if leaf_node.state.is_done():
-            # winner = leaf_node.state.turn
-            # value = 1 if winner == leaf_node.state.turn else -1
-            value = 1
+            winner = leaf_node.state.turn
+            value = 1 if winner == leaf_node.state.turn else -1
         else:
-            prob, value = self.net.predict(preprocess(leaf_node.state.n))
+            prob, value = self.net.predict(leaf_node.state.n)
             self.expand(leaf_node, prob)
         self.backpropagate(leaf_node, value)
 

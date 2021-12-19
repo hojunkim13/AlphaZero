@@ -35,7 +35,11 @@ def save_data(data):
 
 def self_play(n_play):
     net = DNN(31, 3)  # Don't use gpu when self-play. it will make bottle-neck effect
-    net.load_state_dict(torch.load("./BR31/weight/best.pt"))
+    try:
+        net.load_state_dict(torch.load("./BR31/weight/best.pt"))
+    except:
+        os.makedirs("./BR31/weight", exist_ok=True)
+        torch.save(net.state_dict(), "./BR31/weight/best.pt")
     mcts = MCTS(net)
     datum = []
     for e in range(n_play):
