@@ -1,7 +1,7 @@
 """
 Baskin Robbins 31 Game
 
-This is a simple game from korea.
+This is a simple game in korea.
 Starting with number 1, one person can say the numbers
 up to three and last person who speaks 31 becomes a loser.
 

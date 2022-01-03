@@ -1,4 +1,3 @@
-import numpy as np
 from copy import deepcopy
 
 Black = 0
@@ -101,23 +100,6 @@ def human_action(state):
         except:
             pass
     return action
-
-
-def mcs_player(board, n=100):
-    score = {m: 0 for m in board.get_legal_moves()}
-    for _ in range(n):
-        move = np.random.choice(list(score.keys()))
-        board_ = deepcopy(board)
-        board_.play(move)
-        while True:
-            done, winner = board_.is_done()
-            if done:
-                break
-            rand_m = np.random.choice(board_.get_legal_moves())
-            board_.play(rand_m)
-        if winner == board.current_player:
-            score[move] += 1
-    return max(score, key=score.get)
 
 
 def alpha_beta(game, alpha, beta):
