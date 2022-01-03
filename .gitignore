@@ -1,4 +1,6 @@
+.gitignore
 *.data
 *.pt
 __pycache__
 .vscode
+test
