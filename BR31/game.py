@@ -5,8 +5,8 @@ This is a simple game in korea.
 Starting with number 1, one person can say the numbers
 up to three and last person who speaks 31 becomes a loser.
 
-also, There is a certain victory strategy in this game. so if player who
-play first know this strategy, he can always win. (only for 1 vs 1)
+There is a certain victory strategy in this game. so if the first
+player knows this strategy, he can always win. (only for 1 vs 1)
 """
 import random
 
