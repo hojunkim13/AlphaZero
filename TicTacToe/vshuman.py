@@ -28,7 +28,8 @@ def main():
     net.load_state_dict(torch.load("./TicTacToe/weight/best.pt"))
     mcts = MCTS(net)
     bot_policy = lambda x: mcts.get_move(x)[0]
-    policies = [alpha_beta_player, bot_policy]
+    # policies = [alpha_beta_player, bot_policy]
+    policies = [human_action, bot_policy]
     policies = policies if random.random() > 0.5 else policies[::-1]
     play(policies)
 

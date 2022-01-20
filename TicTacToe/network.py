@@ -16,6 +16,7 @@ class conv_layer(nn.Module):
                 padding=padding,
                 bias=False,
             ),
+            nn.BatchNorm2d(dim_out),
             nn.ReLU(),
         )
 

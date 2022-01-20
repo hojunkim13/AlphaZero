@@ -9,7 +9,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def train(batch_size=512, epoch=100):
-    net = CNN().to(device)
+    net = CNN().to(device).train()
     net.load_state_dict(torch.load("./TicTacToe/weight/best.pt"))
     optimizer = torch.optim.Adam(net.parameters(), lr=1e-3)
     data_loader = get_data_loader(batch_size)

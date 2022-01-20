@@ -28,7 +28,7 @@ class Node:
 
 class MCTS:
     def __init__(self, net):
-        self.net = net
+        self.net = net.eval()
 
     def select(self, node):
         while not node.is_leaf():
