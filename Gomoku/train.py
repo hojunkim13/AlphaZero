@@ -1,19 +1,16 @@
-from network import ResNet
-import os
 import numpy as np
 import torch
-import pickle
 from torch.utils.data import Dataset, DataLoader
 from Config import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def train(epoch=100):
-    net = ResNet().to(device).train()
-    net.load_state_dict(torch.load(weight_path + "best.pt"))
-    optimizer = torch.optim.Adam(net.parameters(), lr=LR)
-    data_loader = get_data_loader(BATCHSIZE)
+def train(net, data, epoch):
+    net = net.to(device).train()
+    optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=L2_const)
+    data_loader = get_data_loader(data, BATCHSIZE)
+    mean_loss = 0
     for e in range(epoch):
         losses = []
         for state, prob, value in data_loader:
@@ -26,21 +23,12 @@ def train(epoch=100):
             loss.backward()
             optimizer.step()
             losses.append(loss.item())
-        loss_ = np.mean(losses)
-        print(f"\rTrain {e+1}/{epoch}, Loss : {loss_:.3e}", end="")
-    print("")
+        mean_loss += np.mean(losses)
     torch.save(net.state_dict(), weight_path + "lastest.pt")
+    return mean_loss / epoch
 
 
-def load_data():
-    file = sorted(os.listdir(data_path))[-1]
-    with open(data_path + file, mode="rb") as f:
-        data = pickle.load(f)
-    return data
-
-
-def get_data_loader(batch_size):
-    data = load_data()
+def get_data_loader(data, batch_size):
     state, prob, value = zip(*data)
 
     prob = np.array(prob)

@@ -1,4 +1,5 @@
 from Config import *
+from copy import copy
 
 Black = 0
 White = 1
@@ -43,7 +44,7 @@ class Gomoku:
             self.current_player ^= 1
 
     def get_legal_moves(self):
-        return self.empty
+        return copy(self.empty)
 
     def is_legal(self, move):
         return move in self.empty

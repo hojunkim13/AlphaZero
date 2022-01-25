@@ -2,8 +2,6 @@ from network import ResNet
 from mcts import MCTS
 from game import Gomoku
 import os
-import pickle
-import time
 import torch
 from utils import preprocess
 from Config import *
@@ -30,33 +28,19 @@ def play(mcts):
     return data
 
 
-def save_data(data):
-    os.makedirs(data_path, exist_ok=True)
-    date = time.strftime("%Y-%m-%d %H_%M_%S", time.localtime(time.time()))
-    with open(os.path.join(data_path, f"{date}.data"), mode="wb") as f:
-        pickle.dump(data, f)
-    n_files = len(os.listdir(data_path))
-    if n_files > 5:
-        for _ in range(n_files - 5):
-            os.remove(os.path.join(data_path, os.listdir(data_path)[0]))
-    print("Data were generated.")
-
-
-def self_play(n_play):
-    net = ResNet()
+def self_play(net, n_play):
     try:
         net.load_state_dict(torch.load(os.path.join(weight_path, "best.pt")))
     except:
+        print("Can't find best weight.")
         os.makedirs(weight_path, exist_ok=True)
         torch.save(net.state_dict(), os.path.join(weight_path, "best.pt"))
-    mcts = MCTS(net)
+    mcts = MCTS(net, self_play=True)
     datum = []
     for e in range(n_play):
-        print(f"\rSelf Play {e+1}/{n_play}", end="")
         data = play(mcts)
         datum.extend(data)
-    print("")
-    save_data(datum)
+    return datum
 
 
 if __name__ == "__main__":

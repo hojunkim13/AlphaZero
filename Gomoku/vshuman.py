@@ -27,7 +27,7 @@ def play(policies):
 def main():
     net = ResNet()
     net.load_state_dict(torch.load(weight_path + "best.pt"))
-    mcts = MCTS(net)
+    mcts = MCTS(net, log=True)
     bot_policy = lambda x: mcts.get_move(x, temp=0)[0]
     policies = [human_action, bot_policy]
     policies = policies if random.random() > 0.7 else policies[::-1]
