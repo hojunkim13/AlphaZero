@@ -14,6 +14,7 @@ def play(mcts):
         done, winner = game.is_done()
         if done:
             break
+
         move, prob = mcts.get_move(game)
         state = preprocess(game)
         data.append([state, prob, None])
@@ -44,4 +45,5 @@ def self_play(net, n_play):
 
 
 if __name__ == "__main__":
-    self_play(1)
+    net = ResNet()
+    self_play(net, 1)

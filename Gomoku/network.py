@@ -4,64 +4,34 @@ from utils import preprocess
 from game import BOARD_SIZE
 
 
-class residual_block(nn.Module):
-    def __init__(self, in_ch, out_ch, kernerl_size, strides, padding) -> None:
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(
-                in_ch,
-                out_ch,
-                kernel_size=kernerl_size,
-                stride=strides,
-                padding=padding,
-                bias=False,
-            ),
-            nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(
-                out_ch,
-                out_ch,
-                kernel_size=kernerl_size,
-                stride=strides,
-                padding=padding,
-                bias=False,
-            ),
-            nn.BatchNorm2d(out_ch),
-        )
-
-    def forward(self, x):
-        out = self.net(x)
-        out += x
-        out = torch.relu(out)
-        return out
-
-
 class ResNet(nn.Module):
-    def __init__(self, hidden_dim=64) -> None:
+    def __init__(self, hidden_dim=32) -> None:
         super().__init__()
         self.net = nn.Sequential(
-            nn.Conv2d(2, hidden_dim, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(hidden_dim),
+            nn.Conv2d(3, hidden_dim, kernel_size=3, padding=1),
             nn.ReLU(),
-            residual_block(hidden_dim, hidden_dim, 3, 1, 1),
-            residual_block(hidden_dim, hidden_dim, 3, 1, 1),
-            residual_block(hidden_dim, hidden_dim, 3, 1, 1),
+            nn.Conv2d(hidden_dim, hidden_dim * 2, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(hidden_dim * 2, hidden_dim * 3, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(hidden_dim * 3, hidden_dim * 4, kernel_size=3, padding=1),
+            nn.ReLU(),
         )
 
         self.policy_net = nn.Sequential(
-            nn.Conv2d(hidden_dim, 4, 1),
+            nn.Conv2d(hidden_dim * 4, 4, kernel_size=1),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(4 * BOARD_SIZE * BOARD_SIZE, BOARD_SIZE * BOARD_SIZE),
-            nn.Softmax(-1),
+            nn.LogSoftmax(-1),
         )
         self.value_net = nn.Sequential(
-            nn.Conv2d(hidden_dim, 2, 1),
+            nn.Conv2d(hidden_dim * 4, 2, kernel_size=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(2 * BOARD_SIZE * BOARD_SIZE, hidden_dim),
+            nn.Linear(2 * BOARD_SIZE * BOARD_SIZE, hidden_dim * 2),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 1),
+            nn.Linear(hidden_dim * 2, 1),
             nn.Tanh(),
         )
         self.cuda()
@@ -75,7 +45,7 @@ class ResNet(nn.Module):
     def predict(self, x):
         x = preprocess(x)
         with torch.no_grad():
-            prob, value = self.forward(x.cuda())
-        prob = prob.squeeze().cpu().numpy()
+            log_prob, value = self.forward(x.cuda())
+        prob = torch.exp(log_prob).squeeze().cpu().numpy()
         value = value.squeeze().cpu().item()
         return prob, value
