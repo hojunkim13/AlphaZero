@@ -19,7 +19,7 @@ def train(batch_size=512, epoch=100):
             optimizer.zero_grad()
             pred_prob, pred_value = net(state)
             value_loss = torch.mean(torch.square(pred_value.squeeze() - value))
-            policy_loss = -torch.mean(prob * torch.log(pred_prob + 1e-8))
+            policy_loss = -torch.mean(torch.sum(prob * torch.log(pred_prob + 1e-8), 1))
             loss = value_loss + policy_loss
 
             loss.backward()
