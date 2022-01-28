@@ -1,9 +1,8 @@
-from copy import deepcopy
 import numpy as np
 from Config import *
-from game import BOARD_SIZE
 import os
 from datetime import datetime
+from copy import deepcopy
 
 
 class MCTSLogger:
@@ -13,9 +12,7 @@ class MCTSLogger:
         os.makedirs("./Gomoku/log/", exist_ok=True)
         self.path = f"./Gomoku/log/{title}.log"
 
-    def log(self, action, prob):
-        game = self.mcts.root_node.state
-
+    def log(self, game, move, prob):
         win_rate = (self.mcts.root_node.w / self.mcts.root_node.n + 1) / 2
         legal_move = game.get_legal_moves()
         legal_prob = prob[legal_move]
@@ -29,7 +26,7 @@ class MCTSLogger:
 
         log = f"# Player: {'White' if game.current_player else 'Black'}\t"
         log += f"# Win Rate: {win_rate*1e2:.1f}%\t"
-        log += f"# Move: {conv_move(action)}\n"
+        log += f"# Move: {conv_move(move)}\n"
         log += f"# Legal move  : {list(move_prob_dict.keys())[:5]}\n"
         log += f"# Probability : {list(move_prob_dict.values())[:5]}\n"
         with open(self.path, mode="a", encoding="utf-8") as file:
@@ -37,14 +34,13 @@ class MCTSLogger:
 
 
 class Node:
-    def __init__(self, parent, state, p):
+    def __init__(self, parent, move, p):
         self.parent = parent
-        self.state = deepcopy(state)
+        self.move = move
         self.p = p
         self.w = 0
         self.n = 0
-        self.childs = []
-        self.legal_moves = state.get_legal_moves()
+        self.childs = {}
 
     def get_puct(self):
         q = -self.w / (self.n + 1e-8)
@@ -60,59 +56,59 @@ class Node:
 
 class MCTS:
     def __init__(self, net, log=False, self_play=False):
-        self.net = net.eval()
+        self.net = net.eval().cpu()
         self.logger = MCTSLogger(self) if log else None
         self.is_self_play = self_play
         self.last_move = None
 
     def select(self, node):
-        while not node.is_leaf():
-            best_puct = -1e5
-            best_child = None
-            for n in node.childs:
-                puct = n.get_puct()
-                if puct > best_puct:
-                    best_puct = puct
-                    best_child = n
-            node = best_child
-        return node
+        best_puct = -1e5
+        best_child = None
+        for n in node.childs.values():
+            puct = n.get_puct()
+            if puct > best_puct:
+                best_puct = puct
+                best_child = n
+        return best_child
 
-    def expand(self, node, probs):
-        for move in node.legal_moves:
+    def expand(self, node, state, probs):
+        for move in state.get_legal_moves():
             p = probs[move]
-            new_state = deepcopy(node.state)
-            new_state.play(move)
-            child = Node(node, new_state, p)
-            node.childs.append(child)
+            child = Node(node, move, p)
+            node.childs[move] = child
 
     def backpropagate(self, node, value):
-        node.w += value
         node.n += 1
+        node.w += value
         if not node.is_root():
             self.backpropagate(node.parent, -value)
 
-    def search(self):
-        leaf_node = self.select(self.root_node)
-        done, winner = leaf_node.state.is_done()
+    def search(self, state):
+        node = self.root_node
+        while True:
+            if node.is_leaf():
+                break
+            node = self.select(node)
+            state.play(node.move)
+
+        done, winner = state.is_done()
         if done:
             value = 0 if winner == -1 else -1
         else:
-            prob, value = self.net.predict(leaf_node.state)
-            self.expand(leaf_node, prob)
-        self.backpropagate(leaf_node, value)
+            prob, value = self.net.predict(state)
+            self.expand(node, state, prob)
+        self.backpropagate(node, value)
 
     def get_move(self, state, temp=TEMPERATURE):
-        if self.is_self_play and self.last_move is not None:
-            idx = self.root_node.legal_moves.index(self.last_move)
-            self.root_node = self.root_node.childs[idx]
-            self.root_node.parent = None
-        else:
-            self.root_node = Node(None, state, 1)
-        for _ in range(N_SEARCH):
-            self.search()
+        cond = [not self.is_self_play, not state.board]
+        if any(cond):
+            self.root_node = Node(None, None, None)
 
-        legal_moves = self.root_node.legal_moves
-        legal_visits = np.array([c.n for c in self.root_node.childs])
+        for _ in range(N_SEARCH):
+            self.search(deepcopy(state))
+
+        legal_moves = state.get_legal_moves()
+        legal_visits = np.array([c.n for c in self.root_node.childs.values()])
 
         if not temp:
             legal_probs = legal_visits / legal_visits.sum()
@@ -141,7 +137,9 @@ class MCTS:
                 all_probs[m] = 0
 
         if self.logger:
-            self.logger.log(move, all_probs)
-        self.last_move = move
+            self.logger.log(state, move, all_probs)
+
+        self.root_node = self.root_node.childs[move]
+
         return move, all_probs
 
