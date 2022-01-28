@@ -24,8 +24,6 @@ class BR31:
         self.n = 0
 
     def play(self, n):
-        if self.is_done():
-            return
         n = max(min(n, 2), 0)
         self.n += n + 1
         self.turn ^= 1
