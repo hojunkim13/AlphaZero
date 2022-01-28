@@ -8,7 +8,7 @@ from network import ResNet
 
 def main():
     i = 0
-    data = deque(maxlen=1000)
+    data = deque(maxlen=3000)
     net = ResNet()
     while True:
         history = self_play(net, 1)
