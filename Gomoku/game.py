@@ -1,5 +1,4 @@
 from Config import *
-from copy import copy
 
 Black = 0
 White = 1
@@ -34,23 +33,21 @@ class Gomoku:
         self.empty = list(range(BOARD_SIZE ** 2))
 
     def play(self, move):
-        done, _ = self.is_done()
-        if done:
+        if not self.is_legal(move):
             return
-
-        if self.is_legal(move):
-            self.board[move] = self.current_player
-            self.empty.remove(move)
-            self.current_player ^= 1
+        self.board[move] = self.current_player
+        self.empty.remove(move)
+        self.current_player ^= 1
 
     def get_legal_moves(self):
-        return copy(self.empty)
+        return self.empty.copy()
 
     def is_legal(self, move):
         return move in self.empty
 
     def is_done(self):
-        if not self.board:
+        minimun_turn = WIN_CONDITION * 2 - 1
+        if len(self.board) < minimun_turn:
             return False, -1
 
         for m, p in self.board.items():
@@ -91,7 +88,7 @@ class Gomoku:
 def human_action(state):
     while True:
         try:
-            action = input("Move : ").replace(" ", "").split(":")[-1]
+            action = input("Move : ").split(":")[-1].split(" ")
             row, col = action
             row, col = int(row), int(col)
             action = row * BOARD_SIZE + col
