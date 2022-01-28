@@ -8,6 +8,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train(net, data, epoch):
     net = net.to(device).train()
+    try:
+        net.load_state_dict(torch.load(weight_path + "lastest.pt"))
+    except FileNotFoundError:
+        pass
     optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=L2_const)
     data_loader = get_data_loader(data, BATCHSIZE)
     mean_loss = 0
@@ -15,9 +19,9 @@ def train(net, data, epoch):
         losses = []
         for state, prob, value in data_loader:
             optimizer.zero_grad()
-            pred_prob, pred_value = net(state)
+            pred_log_prob, pred_value = net(state)
             value_loss = torch.mean(torch.square(pred_value.squeeze() - value))
-            policy_loss = -torch.mean(prob * torch.log(pred_prob + 1e-8))
+            policy_loss = -torch.mean(torch.sum(prob * pred_log_prob, 1))
             loss = value_loss + policy_loss
 
             loss.backward()
